@@ -3,8 +3,6 @@ import { track, trigger } from "./effect"
 export function reactive(raw) {
   return new Proxy(raw, {
     get(target, key) {
-      // {foo:1}
-      // key
       const res = Reflect.get(target, key)
       // 依赖收集
       track(target, key)
