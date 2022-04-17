@@ -13,17 +13,15 @@ class ReactiveEffect {
   }
 
   run() {
-    // 1.会收集依赖
-    // shouldTrack 来区分
     if (!this.active) {
       return this._fn()
     }
-
+    // 应该收集
     shouldTrack = true
     activeEffect = this;
-
-
     const result = this._fn()
+
+    // 重置
     shouldTrack = false
 
     return result;
@@ -42,12 +40,14 @@ class ReactiveEffect {
 function cleanupEffect(effect) {
   effect.deps.forEach((dep: any) => {
     dep.delete(effect)
-
   })
+  effect.deps.length = 0
 }
 
 const targetMap = new Map()
 export function track(target, key) {
+  if (!isTracking()) return;
+
   // target -> key -> dep
   let depsMap = targetMap.get(target)
   if (!depsMap) {
@@ -60,15 +60,16 @@ export function track(target, key) {
     depsMap.set(key, dep)
   }
 
-  if (!activeEffect) return;
-  if (!shouldTrack) return
+  if (dep.has(activeEffect)) return;
 
   dep.add(activeEffect);
   activeEffect.deps.push(dep);
 }
-function isTracking(params: type) {
 
+function isTracking() {
+  return shouldTrack && activeEffect !== undefined
 }
+
 export function trigger(target, key) {
   let depsMap = targetMap.get(target)
   let dep = depsMap.get(key)
