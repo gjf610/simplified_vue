@@ -1,5 +1,8 @@
 import { extend } from "./shared/index";
 
+let activeEffect;
+let shouldTrack;
+
 class ReactiveEffect {
   private _fn: any;
   deps = [];
@@ -10,8 +13,20 @@ class ReactiveEffect {
   }
 
   run() {
+    // 1.会收集依赖
+    // shouldTrack 来区分
+    if (!this.active) {
+      return this._fn()
+    }
+
+    shouldTrack = true
     activeEffect = this;
-    return this._fn()
+
+
+    const result = this._fn()
+    shouldTrack = false
+
+    return result;
   }
   stop() {
     if (this.active) {
@@ -46,11 +61,14 @@ export function track(target, key) {
   }
 
   if (!activeEffect) return;
+  if (!shouldTrack) return
 
   dep.add(activeEffect);
   activeEffect.deps.push(dep);
 }
+function isTracking(params: type) {
 
+}
 export function trigger(target, key) {
   let depsMap = targetMap.get(target)
   let dep = depsMap.get(key)
@@ -64,7 +82,7 @@ export function trigger(target, key) {
   }
 }
 
-let activeEffect;
+
 export function effect(fn, options: any = {}) {
 
   const _effect = new ReactiveEffect(fn, options.scheduler)
